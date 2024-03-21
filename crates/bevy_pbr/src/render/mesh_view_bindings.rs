@@ -20,6 +20,8 @@ use bevy_render::{
     texture::{BevyDefault, FallbackImage, FallbackImageMsaa, FallbackImageZero, Image},
     view::{Msaa, ViewUniform, ViewUniforms},
 };
+use bevy_render::renderer::RenderAdapter;
+use wgpu::DownlevelFlags;
 
 #[cfg(all(feature = "webgl", target_arch = "wasm32", not(feature = "webgpu")))]
 use bevy_render::render_resource::binding_types::texture_cube;
@@ -177,7 +179,9 @@ fn layout_entries(
     clustered_forward_buffer_binding_type: BufferBindingType,
     layout_key: MeshPipelineViewLayoutKey,
     render_device: &RenderDevice,
+    render_adapter: &RenderAdapter
 ) -> Vec<BindGroupLayoutEntry> {
+
     let mut entries = DynamicBindGroupLayoutEntries::new_with_indices(
         ShaderStages::FRAGMENT,
         (
@@ -191,20 +195,11 @@ fn layout_entries(
             // Point Shadow Texture Cube Array
             (
                 2,
-                #[cfg(all(
-                    not(ios_simulator),
-                    any(
-                        not(feature = "webgl"),
-                        not(target_arch = "wasm32"),
-                        feature = "webgpu"
-                    )
-                ))]
-                texture_cube_array(TextureSampleType::Depth),
-                #[cfg(any(
-                    ios_simulator,
-                    all(feature = "webgl", target_arch = "wasm32", not(feature = "webgpu"))
-                ))]
-                texture_cube(TextureSampleType::Depth),
+                if render_adapter.get_downlevel_capabilities().flags.contains(DownlevelFlags::CUBE_ARRAY_TEXTURES) {
+                    texture_cube_array(TextureSampleType::Depth)
+                } else {
+                    texture_cube(TextureSampleType::Depth)
+                },
             ),
             // Point Shadow Texture Array Sampler
             (3, sampler(SamplerBindingType::Comparison)),
@@ -328,11 +323,12 @@ fn layout_entries(
 /// [`MeshPipelineViewLayoutKey`] flags.
 pub fn generate_view_layouts(
     render_device: &RenderDevice,
+    render_adapter: &RenderAdapter,
     clustered_forward_buffer_binding_type: BufferBindingType,
 ) -> [MeshPipelineViewLayout; MeshPipelineViewLayoutKey::COUNT] {
     array::from_fn(|i| {
         let key = MeshPipelineViewLayoutKey::from_bits_truncate(i as u32);
-        let entries = layout_entries(clustered_forward_buffer_binding_type, key, render_device);
+        let entries = layout_entries(clustered_forward_buffer_binding_type, key, render_device, render_adapter);
 
         #[cfg(debug_assertions)]
         let texture_count: usize = entries

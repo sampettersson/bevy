@@ -37,6 +37,14 @@ bytemuck = { version = "1", features = ["derive"] }
 radsort = "0.1"
 smallvec = "1.6"
 thread_local = "1.0"
+wgpu = { version = "0.19.3", default-features = false, features = [
+  "wgsl",
+  "dx12",
+  "metal",
+  "naga",
+  "naga-ir",
+  "fragile-send-sync-non-atomic-wasm",
+] }
 
 [lints]
 workspace = true
