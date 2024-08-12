@@ -1308,10 +1308,10 @@ pub fn queue_shadows<M: Material>(
                     ShadowBinKey {
                         draw_function: draw_shadow_mesh,
                         pipeline: pipeline_id,
-                        asset_id: mesh_instance.mesh_asset_id,
+                        asset_id: mesh_instance.mesh_asset_id.into(),
                     },
                     entity,
-                    mesh_instance.should_batch(),
+                    BinnedRenderPhaseType::mesh(mesh_instance.should_batch()),
                 );
             }
         }
